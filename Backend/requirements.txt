@@ -1,0 +1,25 @@
+# Core
+numpy>=1.26,<2.0
+opencv-python>=4.9.0
+pyyaml>=6.0
+tqdm>=4.66
+
+# Detection / Tracking / Pose (Ultralytics ships YOLOv8 + YOLO-Pose, and
+# integrates ByteTrack as a built-in tracker)
+ultralytics>=8.2.0
+
+
+# Optical flow (RAFT-lite) + general deep learning
+torch>=2.2.0
+torchvision>=0.17.0
+
+# Appearance embeddings
+git+https://github.com/openai/CLIP.git
+ftfy
+regex
+
+# Clustering / anomaly / calibration
+scikit-learn>=1.4.0
+
+# Dev / testing
+pytest>=8.0

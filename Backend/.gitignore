@@ -1,0 +1,22 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Data / weights / outputs (large, machine-specific, or private)
+data/raw/
+data/processed/
+data/sample_videos/*.mp4
+outputs/logs/
+outputs/results/
+*.pt
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+
+#venv
+venv/

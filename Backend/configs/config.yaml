@@ -1,0 +1,56 @@
+# Central configuration for the Crowd Outlier Detection pipeline.
+# Keep all tunable paths/params here instead of hardcoding in src/.
+
+paths:
+  sample_videos_dir: "data/sample_videos"
+  processed_dir: "data/processed"
+  outputs_dir: "outputs/results"
+  logs_dir: "outputs/logs"
+
+# ---- Stage 1: Detection ----
+detection:
+  model: "yolo11s.pt"      # YOLOv11-small (switched from YOLOv8-small: better accuracy/speed)
+  conf_threshold: 0.35
+  iou_threshold: 0.45
+  classes: [0]               # COCO class 0 = "person" only
+  device: "cpu"               # "cpu" on laptop; set "cuda" / "0" on Colab GPU
+
+# ---- Stage 2: Tracking ----
+tracking:
+  tracker: "bytetrack.yaml"  # Ultralytics built-in ByteTrack config
+  track_buffer: 30            # frames to keep a lost track alive
+  match_thresh: 0.8
+
+# ---- Stage 3: Optical Flow (RAFT-lite) ----
+optical_flow:
+  model: "raft_small"
+  device: "cpu"
+
+# ---- Stage 4: Pose ----
+pose:
+  model: "yolo11s-pose.pt"  # keep in sync with YOLOv11 switch
+  device: "cpu"
+
+# ---- Stage 5: Appearance (CLIP) ----
+appearance:
+  model: "ViT-B/32"
+  device: "cpu"
+
+# ---- Stage 6: Clustering ----
+clustering:
+  eps: 0.5
+  min_samples: 4
+
+# ---- Stage 7: Anomaly scoring ----
+anomaly:
+  isolation_forest:
+    n_estimators: 200
+    contamination: 0.05
+  lstm_autoencoder:
+    seq_len: 16
+    hidden_size: 64
+    epochs: 50
+
+# ---- Calibration ----
+calibration:
+  method: "platt"
