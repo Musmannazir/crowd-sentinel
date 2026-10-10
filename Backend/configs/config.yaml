@@ -21,10 +21,12 @@ tracking:
   track_buffer: 30            # frames to keep a lost track alive
   match_thresh: 0.8
 
-# ---- Stage 3: Optical Flow (RAFT-lite) ----
+# ---- Stage 3: Optical Flow (RAFT-small, via torchvision) ----
 optical_flow:
   model: "raft_small"
   device: "cpu"
+  resize_short_side: 240   # downscale before flow estimation to keep CPU runtime reasonable;
+                             # raise this (e.g. 360-480) once you're running on Colab GPU
 
 # ---- Stage 4: Pose ----
 pose:
