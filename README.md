@@ -1,95 +1,135 @@
-```markdown
 # Crowd Outlier Detection System
 
-A privacy-preserving, real-time AI pipeline for detecting behavioral and
-appearance outliers in crowds **without facial recognition or identity
-tracking**. Outliers are scored relative to *local crowd context* rather
-than fixed global rules — the project's core differentiator from commercial
-systems (Avigilon ACC, BriefCam, SenseTime/Megvii).
+A privacy-preserving, real-time AI pipeline for detecting behavioral and appearance outliers in crowds **without facial recognition or identity tracking**. Outliers are scored relative to their local crowd context rather than fixed global rules.
 
-## Pipeline (7 stages)
+The project's core differentiator is its focus on context-aware anomaly detection rather than relying solely on predefined rules or isolated individual behavior.
+
+## Pipeline (7 Stages)
 
 | # | Stage | Component | Status |
-|---|-------|-----------|--------|
-| 1 | Detection | YOLOv11-small (Ultralytics) | ✅ Built + tested |
-| 2 | Tracking | ByteTrack | ✅ Built + tested |
-| 3 | Optical Flow | RAFT-small (torchvision) | ✅ Built + tested |
+|---|---|---|---|
+| 1 | Detection | YOLO11-small (Ultralytics) | ✅ Built and tested |
+| 2 | Tracking | ByteTrack | ✅ Built and tested |
+| 3 | Optical Flow | RAFT-small (torchvision) | ✅ Built and tested |
 | 4 | Pose Estimation | YOLO11-Pose (Ultralytics) | ⏳ Next |
 | 5 | Appearance Embeddings | CLIP ViT-B/32 (OpenAI) | ❌ Not started |
 | 6 | Clustering | DBSCAN (scikit-learn) | ❌ Not started |
-| 7 | Anomaly Scoring | Isolation Forest + LSTM Autoencoder, calibrated via Platt scaling | ❌ Not started |
+| 7 | Anomaly Scoring | Isolation Forest + LSTM Autoencoder, with Platt scaling for calibration | ❌ Not started |
 
-## Repo layout
+## Repository Structure
 
-```
-Backend/
-├── configs/              # YAML configs (paths, model params, thresholds)
-├── data/
-│   ├── raw/               # original input videos (gitignored)
-│   ├── sample_videos/      # 1-2 dev videos used for current build-out
-│   └── processed/         # extracted frames / cached intermediate outputs
-├── src/
-│   ├── detection/         # Stage 1: YOLOv11-small person detection
-│   ├── tracking/           # Stage 2: ByteTrack multi-object tracking
-│   ├── optical_flow/       # Stage 3: RAFT-small motion estimation
-│   ├── pose/               # Stage 4: YOLO11-Pose keypoints
-│   ├── appearance/         # Stage 5: CLIP embeddings
-│   ├── clustering/         # Stage 6: DBSCAN local-context grouping
-│   ├── anomaly/            # Stage 7: Isolation Forest + LSTM Autoencoder
-│   ├── calibration/        # Platt scaling
-│   ├── pipeline/           # Runnable entry points per stage, and (later) full orchestration
-│   └── utils/              # shared helpers (video IO, visualization, logging, config)
-├── notebooks/             # exploration / Colab training notebooks
-├── tests/                 # unit tests per stage
-└── outputs/
-    ├── logs/
-    └── results/            # annotated videos + JSON outputs per stage
+```text
+Crowd_Sentinal/
+├── Backend/
+│   ├── configs/                 # YAML configuration files
+│   ├── data/
+│   │   ├── raw/                 # Original input videos (gitignored)
+│   │   ├── sample_videos/       # Sample videos for development
+│   │   └── processed/           # Extracted frames and cached outputs
+│   ├── src/
+│   │   ├── detection/           # Stage 1: YOLO11-small
+│   │   ├── tracking/            # Stage 2: ByteTrack
+│   │   ├── optical_flow/        # Stage 3: RAFT-small
+│   │   ├── pose/                # Stage 4: YOLO11-Pose
+│   │   ├── appearance/          # Stage 5: CLIP embeddings
+│   │   ├── clustering/          # Stage 6: DBSCAN
+│   │   ├── anomaly/              # Stage 7: Anomaly detection models
+│   │   ├── calibration/         # Anomaly score calibration
+│   │   ├── pipeline/            # Stage runners and orchestration
+│   │   └── utils/                # Shared utilities
+│   ├── notebooks/               # Experiments and training notebooks
+│   ├── tests/                   # Unit and integration tests
+│   ├── outputs/
+│   │   ├── logs/                # Pipeline logs
+│   │   └── results/             # Annotated videos and JSON outputs
+│   └── requirements.txt
+└── README.md
 ```
 
 ## Environment
 
-- **Local laptop**: dev work, CPU (Stage 1-3 verified working CPU-only)
-- **Google Colab**: GPU, for anything CPU makes too slow (optical flow at scale, LSTM training in Stage 7)
+- **Local development:** Windows laptop; Stages 1–3 have been verified in CPU-only mode.
+- **Google Colab:** GPU acceleration for computationally intensive optical flow processing and LSTM training.
 
 ## Setup
 
-```bash
+Run the following commands in Windows PowerShell from the repository root:
+
+```powershell
 cd Backend
 python -m venv venv
-venv\Scripts\Activate.ps1       # Windows PowerShell
-# source venv/bin/activate      # macOS/Linux
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+```
+
+For macOS/Linux, activate the virtual environment using:
+
+```bash
+source venv/bin/activate
 ```
 
 ## Usage
 
-Each stage has its own standalone runnable script — run them in order, each
-one depends on the previous stage's JSON output:
+Each implemented stage has a standalone entry point. Run the stages in order where dependencies require it.
+
+### Stage 1: Person Detection
+
+Run detection independently for isolated detection-quality checks.
 
 ```bash
-# Stage 1 only — detection, no tracking (for isolated quality checks)
 python -m src.pipeline.run_detect_only --video data/sample_videos/sample1.mp4
+```
 
-# Stage 1 + 2 — detection + tracking combined (produces *_tracks.json, needed by Stage 3+)
+### Stages 1–2: Detection and Tracking
+
+Run person detection and ByteTrack together. This generates the track data required by Stage 3 and subsequent stages.
+
+```bash
 python -m src.pipeline.run_detect_track --video data/sample_videos/sample1.mp4
+```
 
-# Stage 3 — optical flow (reads *_tracks.json, produces *_motion.json)
+### Stage 3: Optical Flow
+
+Run RAFT-small-based motion estimation using the tracking output. This generates per-track motion features, including speed and direction.
+
+```bash
 python -m src.pipeline.run_optical_flow --video data/sample_videos/sample1.mp4
-# --max_frames N to test on a subset first and estimate full-run time
 ```
 
-Outputs (annotated videos + JSON) land in `outputs/results/`; logs in `outputs/logs/`.
+Use `--max_frames N` to process a limited number of frames during testing and estimate processing time.
 
-## Current status
+**Note:** Run commands from the `Backend/` directory. Ensure the sample video exists at the specified path and that the required dependencies are installed.
 
-Stage 1 (Detection), Stage 2 (Tracking) and Stage 3 (Optical Flow) are built
-and verified end-to-end on a real sample video (516 frames): detection runs
-clean, tracking produces stable IDs, and per-track motion vectors (speed +
-direction) are extracted and sanity-checked.
+Outputs, including annotated videos and JSON files, are saved in `outputs/results/`, while logs are saved in `outputs/logs/`.
 
-Next: **Stage 4 (Pose Estimation)**, which — like Stage 3 — consumes Stage 2's
-tracks independently, so it can be built without waiting on Stage 3's output.
+## Current Development Status
 
-Currently building and testing against 1-2 local sample videos before scaling
-to benchmark datasets (UCSD Anomaly Detection, CUHK Avenue, ShanghaiTech Campus).
-```
+### Completed
+
+- **Stage 1 — Detection:** Person detection using YOLO11-small.
+- **Stage 2 — Tracking:** Multi-object tracking using ByteTrack, with persistent track IDs.
+- **Stage 3 — Optical Flow:** RAFT-small-based motion estimation and per-track motion feature extraction.
+
+Stages 1–3 have been tested end-to-end on a real sample video containing 516 frames. Detection results were inspected, track IDs were checked for stability, and extracted motion vectors (speed and direction) were sanity-checked.
+
+### Next Steps
+
+**Stage 4 — Pose Estimation**
+
+Implement YOLO11-Pose to extract human body keypoints and derive pose-related features. This stage is designed to consume Stage 2 tracking data independently, so its development does not need to wait for Stage 3.
+
+### Planned Evaluation
+
+After the remaining stages are implemented, the system will be evaluated on benchmark datasets, including:
+
+- UCSD Anomaly Detection Dataset
+- CUHK Avenue Dataset
+- ShanghaiTech Campus Dataset
+
+Development and initial testing are currently focused on one or two local sample videos before scaling to larger benchmark datasets.
+
+## Project Goal
+
+The goal is to develop a modular crowd-anomaly detection pipeline that combines motion, pose, appearance, and local crowd context to identify unusual patterns for further review, while avoiding facial recognition.
+
+The system is intended as a decision-support tool. An anomaly score indicates unusual behavior relative to the observed context; it does not, by itself, establish suspicious intent or wrongdoing.
