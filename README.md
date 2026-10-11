@@ -11,7 +11,7 @@ The project's core differentiator is its focus on context-aware anomaly detectio
 | 1 | Detection | YOLO11-small (Ultralytics) | ✅ Built and tested |
 | 2 | Tracking | ByteTrack | ✅ Built and tested |
 | 3 | Optical Flow | RAFT-small (torchvision) | ✅ Built and tested |
-| 4 | Pose Estimation | YOLO11-Pose (Ultralytics) | ⏳ Next |
+| 4 | Pose Estimation | YOLO11-Pose (Ultralytics) | ⏳ In progress |
 | 5 | Appearance Embeddings | CLIP ViT-B/32 (OpenAI) | ❌ Not started |
 | 6 | Clustering | DBSCAN (scikit-learn) | ❌ Not started |
 | 7 | Anomaly Scoring | Isolation Forest + LSTM Autoencoder, with Platt scaling for calibration | ❌ Not started |
@@ -43,6 +43,7 @@ Crowd_Sentinal/
 │   │   ├── logs/                # Pipeline logs
 │   │   └── results/             # Annotated videos and JSON outputs
 │   └── requirements.txt
+├── Frontend/                    # Scope not finalized yet (dashboard vs. demo UI)
 └── README.md
 ```
 
@@ -98,6 +99,14 @@ python -m src.pipeline.run_optical_flow --video data/sample_videos/sample1.mp4
 
 Use `--max_frames N` to process a limited number of frames during testing and estimate processing time.
 
+### Stage 4: Pose Estimation
+
+Run YOLO11-Pose against the tracking output, matching each pose to its Stage 2 track_id via IoU.
+
+```bash
+python -m src.pipeline.run_pose --video data/sample_videos/sample1.mp4
+```
+
 **Note:** Run commands from the `Backend/` directory. Ensure the sample video exists at the specified path and that the required dependencies are installed.
 
 Outputs, including annotated videos and JSON files, are saved in `outputs/results/`, while logs are saved in `outputs/logs/`.
@@ -112,11 +121,11 @@ Outputs, including annotated videos and JSON files, are saved in `outputs/result
 
 Stages 1–3 have been tested end-to-end on a real sample video containing 516 frames. Detection results were inspected, track IDs were checked for stability, and extracted motion vectors (speed and direction) were sanity-checked.
 
-### Next Steps
+### In Progress
 
 **Stage 4 — Pose Estimation**
 
-Implement YOLO11-Pose to extract human body keypoints and derive pose-related features. This stage is designed to consume Stage 2 tracking data independently, so its development does not need to wait for Stage 3.
+YOLO11-Pose extraction and IoU-based matching to Stage 2 track IDs is implemented. Not yet verified end-to-end on a sample video due to an unrelated local environment issue (Windows Application Control blocking a torch DLL on the dev machine).
 
 ### Planned Evaluation
 
