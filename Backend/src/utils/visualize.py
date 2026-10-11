@@ -75,6 +75,52 @@ def draw_motion_arrows(frame: np.ndarray, tracks_with_motion: list[dict]) -> np.
     return annotated
 
 
+# COCO 17-keypoint skeleton edges (0-indexed, matches KEYPOINT_NAMES order
+# in src/pose/pose_estimator.py).
+COCO_SKELETON = [
+    (15, 13), (13, 11), (16, 14), (14, 12), (11, 12),
+    (5, 11), (6, 12), (5, 6), (5, 7), (6, 8), (7, 9), (8, 10),
+    (1, 2), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6),
+]
+
+
+def draw_poses(
+    frame: np.ndarray, tracks_with_pose: list[dict], kp_conf_threshold: float = 0.5
+) -> np.ndarray:
+    """Draw skeleton lines + track ID for each pose-matched track.
+
+    Each dict in tracks_with_pose needs: track_id, bbox, keypoints
+    (list of (x, y, conf) tuples, COCO 17-keypoint order). Only draws an
+    edge/point if its keypoint confidence clears kp_conf_threshold, so
+    occluded/unsure joints don't draw nonsense lines across the frame.
+    """
+    annotated = frame.copy()
+    for t in tracks_with_pose:
+        color = _color_for_id(t["track_id"])
+        kpts = t["keypoints"]
+
+        for i, j in COCO_SKELETON:
+            if i >= len(kpts) or j >= len(kpts):
+                continue
+            x1, y1, c1 = kpts[i]
+            x2, y2, c2 = kpts[j]
+            if c1 < kp_conf_threshold or c2 < kp_conf_threshold:
+                continue
+            cv2.line(annotated, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+
+        for x, y, c in kpts:
+            if c >= kp_conf_threshold:
+                cv2.circle(annotated, (int(x), int(y)), 3, color, -1)
+
+        x1, y1, x2, y2 = map(int, t["bbox"])
+        label = f"ID {t['track_id']}"
+        cv2.putText(
+            annotated, label, (x1, max(0, y1 - 6)),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA,
+        )
+    return annotated
+
+
 def _color_for_id(track_id: int) -> tuple[int, int, int]:
     """Deterministic distinct-ish BGR color per track ID."""
     rng = np.random.default_rng(track_id)

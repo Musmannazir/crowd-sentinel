@@ -32,6 +32,9 @@ optical_flow:
 pose:
   model: "yolo11s-pose.pt"  # keep in sync with YOLOv11 switch
   device: "cpu"
+  conf_threshold: 0.35
+  iou_threshold: 0.45
+  match_iou_threshold: 0.3   # min IoU to link a pose detection to a Stage 2 track_id
 
 # ---- Stage 5: Appearance (CLIP) ----
 appearance:
